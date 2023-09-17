@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -195,17 +196,22 @@ func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Servi
 }
 
 // NewChromeDriverService starts a ChromeDriver instance in the background.
-func NewChromeDriverService(path string, port int, opts ...ServiceOption) (*Service, error) {
-	cmd := exec.Command(path, "--port="+strconv.Itoa(port), "--url-base=wd/hub", "--verbose")
-	s, err := newService(cmd, "/wd/hub", port, opts...)
-	if err != nil {
-		return nil, err
-	}
-	s.shutdownURLPath = "/shutdown"
-	if err := s.start(port); err != nil {
-		return nil, err
-	}
-	return s, nil
+func NewChromeDriverService(path string, port int, hideChromeDriverConsole bool, opts ...ServiceOption) (*Service, error) {
+    cmd := exec.Command(path, "--port="+strconv.Itoa(port), "--url-base=wd/hub", "--verbose")
+
+    if hideChromeDriverConsole {
+        cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+    }
+
+    s, err := newService(cmd, "/wd/hub", port, opts...)
+    if err != nil {
+        return nil, err
+    }
+    s.shutdownURLPath = "/shutdown"
+    if err := s.start(port); err != nil {
+        return nil, err
+    }
+    return s, nil
 }
 
 // NewGeckoDriverService starts a GeckoDriver instance in the background.
